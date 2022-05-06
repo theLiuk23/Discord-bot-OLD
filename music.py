@@ -1,0 +1,532 @@
+from urllib.error import HTTPError
+from discord.ext import commands
+import lyricsgenius
+import youtube_dl
+import discord
+import datetime
+import main
+import sys
+import os
+
+
+class MusicCog(commands.Cog):
+    # init is called when an instance of music_cog is created
+    def __init__(self, bot):
+        self.FFMPEG_OPTIONS = {
+            'before_options': '-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5',
+            'options': '-vn' }
+        self.YDL_OPTIONS = {
+            'format': 'bestaudio',
+            'noplaylist': 'True',
+            'quiet': 'True' }
+
+        # music info
+        self.is_playing = False
+        self.voice_channel = None
+        # music queue of index "-1" (the element that was 0 before deleting it)
+        self.current_song = None
+
+        # floats
+        self.music_position = 0.0
+        self.current_volume = 1.0
+
+        # lists
+        self.music_queue = []
+        # list of all the commands given in this session
+        self.log = []
+
+        self.bot = bot
+
+    # saves the log into a *.txt file
+    async def save_log(self):
+        maximum = 1000
+        filename = 'log.txt'
+        # writes down the local log of used commands
+        with open(filename, 'a') as file:
+            file.writelines(self.log)
+        # gets the number of lines
+        length = sum(1 for line in open(filename, 'r'))
+        if length > maximum:
+            # gets a list of lines
+            with open(filename, 'r') as file:
+                data = file.read().splitlines(True)
+            # deletes old and exceeding lines (20% of the file)
+            with open(filename, 'w') as file:
+                file.writelines(data[maximum:])
+
+
+    # saves the volume when the bot disconnects
+    # it will load the previous volume when it goes online again
+    async def save_volume(self):
+        volume = self.current_volume
+        main.save_ini(main.config, 'settings.ini', 'variables', 'volume', str(volume))
+
+
+    # loads previously saved volume
+    async def load_volume(self):
+        volume = main.read_ini(main.config, 'settings.ini', 'variables', 'volume')
+        self.current_volume = float(volume)
+
+
+    # reloads the bot if an error occurs
+    # called by music.py
+    async def reload_bot(self):
+        await self.bot.close()
+        os.execv(sys.executable, ['python3'] + ['main.py'])
+
+
+    # connects to the voice channel where the author is currently connected
+    async def connect_to_voice_channel(self, ctx):
+        voice = ctx.author.voice
+        # checks if the bot is already connected
+        if self.voice_channel is not None:
+            if self.voice_channel.is_connected():
+                return
+        if voice is None:
+            await ctx.send('Please connect to a voice channel.')
+            return
+        self.voice_channel = await voice.channel.connect()
+        await ctx.guild.change_voice_state(channel=self.voice_channel.channel, self_mute=False, self_deaf=True)
+
+
+    # disconnects from the voice channel
+    async def disconnect_from_voice_channel(self):
+        if self.voice_channel is not None:
+            if self.voice_channel.is_connected():
+                await self.voice_channel.disconnect()
+        self.voice_channel = None
+        self.current_song = None
+        self.is_playing = False
+        self.music_position = 0.0
+        self.music_queue = []
+        # saves the log into a *.txt file
+        if len(self.log) != 0:
+            await self.save_log()
+
+
+    # plays next song in the queue
+    # this function can be called from
+    # the play command if the user adds a song to the music queue (and the bot is not playing anything)
+    # the play_music() function when the previous song ends
+    # the skip command (called by the user)
+    def play_music(self, error=None):
+        if len(self.music_queue) > 0:
+            # music queue is a list, each element composed by a playlist (dictionary) and a voice channel
+            # so [0] means the first song, [0] means the playlist, ['source'] the value of source in the dictionary
+            song_url = self.music_queue[0][0]['source']
+            self.current_song = self.music_queue[0]
+            # removes the first element because it is about to be played
+            self.music_queue.pop(0)
+            if not self.voice_channel.is_playing():
+                # lambda code --> https://stackoverflow.com/questions/40746213/how-to-use-await-in-a-python-lambda
+                self.voice_channel.play(discord.FFmpegPCMAudio(song_url, **self.FFMPEG_OPTIONS), after=self.play_music)
+            # transforms the volume
+            self.voice_channel.source = discord.PCMVolumeTransformer(self.voice_channel.source,
+                                                                     volume=self.current_volume)
+            # gets the time stamp of the playing song
+            self.music_position = (datetime.datetime.now() - datetime.datetime.now().replace(hour=0, minute=0, second=0,
+                                                                                             microsecond=0)).total_seconds()
+            self.is_playing = True
+        else:
+            self.is_playing = False
+            # self.disconnect_from_voice_channel()
+
+    # adds to the queue some info taken by the first result on YouTube
+    async def add_song_from_yt(self, ctx, *args):
+        if len(args) == 0:
+            await ctx.send("Input a song to play, please.")
+            return
+        query = " ".join(args)
+        # gets the song info from YouTube
+        with youtube_dl.YoutubeDL(self.YDL_OPTIONS) as ydl:
+            try:
+                # temporary info
+                info_temp = ydl.extract_info("ytsearch:%s" % query, download=False)['entries'][0]
+                song_info = {'source': info_temp['formats'][0]['url'], 'title': info_temp['title'],
+                             'duration': info_temp['duration'], 'channel': info_temp['channel']}
+            except HTTPError:
+                await ctx.send(
+                    "This song is a stream or a playlist and it can't be downloaded. Try with a different query.")
+                return
+        self.music_queue.append([song_info, ctx.author.voice.channel])
+        await ctx.send("***{}*** added to the queue.".format(song_info['title']))
+        if self.is_playing is False:
+            self.play_music()
+
+    # adds to the queue some info taken by the first result on YouTube
+    async def add_playlist_by_name(self, ctx, playlist_name):
+        # gets the song info from YouTube
+        songs = await self.get_songs_in_playlist_by_name(playlist_name)
+        await ctx.send(f"Playlist ***{playlist_name}*** added to the queue.")
+        for song in songs:
+            with youtube_dl.YoutubeDL(self.YDL_OPTIONS) as ydl:
+                try:
+                    # temporary info
+                    info_temp = ydl.extract_info("ytsearch:%s" % song, download=False)['entries'][0]
+                    song_info = {'source': info_temp['formats'][0]['url'], 'title': info_temp['title'],
+                                 'duration': info_temp['duration'], 'channel': info_temp['channel']}
+                except HTTPError:
+                    await ctx.send(
+                        "This song is a stream or a playlist and it can't be downloaded. Try with a different query.")
+                    return
+            self.music_queue.append([song_info, ctx.author.voice.channel])
+            if self.is_playing is False:
+                self.play_music()
+
+    # adds to the queue some info taken by the first result on YouTube
+    async def add_playlist_by_index(self, ctx, index):
+        # gets the song info from YouTube
+        songs = await self.get_songs_in_playlist_by_index(index)
+        await ctx.send(f"Playlist ***{(await self.get_playlists_list())[int(index) - 1]}*** added to the queue.")
+        for song in songs:
+            with youtube_dl.YoutubeDL(self.YDL_OPTIONS) as ydl:
+                try:
+                    # temporary info
+                    info_temp = ydl.extract_info("ytsearch:%s" % song, download=False)['entries'][0]
+                    song_info = {'source': info_temp['formats'][0]['url'], 'title': info_temp['title'],
+                                 'duration': info_temp['duration'], 'channel': info_temp['channel']}
+                except HTTPError:
+                    await ctx.send(
+                        "This song is a stream or a playlist and it can't be downloaded. Try with a different query.")
+                    return
+            self.music_queue.append([song_info, ctx.author.voice.channel])
+            if self.is_playing is False:
+                self.play_music()
+
+    # gets the songs' titles in a playlist from the name of it
+    @staticmethod
+    async def get_songs_in_playlist_by_name(playlist_name):
+        async with open(f'playlists/{playlist_name}.txt', 'r') as file:
+            songs = file.readlines()
+            for song in songs:
+                if song.lstrip() == "":
+                    songs.remove(song)
+            return songs
+
+    # gets the songs' titles in a playlist from the index of the playlist
+    async def get_songs_in_playlist_by_index(self, index):
+        song = (await self.get_playlists_list())[int(index) - 1]
+        return await self.get_songs_in_playlist_by_name(song)
+
+    # sends an embed with a lot of information on the currently playing song
+    async def send_np_embed(self, ctx):
+        track = self.current_song[0]
+        if self.music_position is None:
+            await ctx.send('I could not get the song length.')
+        duration_seconds = int(track['duration'])
+        time_stamp = (datetime.datetime.now() - datetime.datetime.now().replace(hour=0, minute=0, second=0,
+                                                                                microsecond=0)).total_seconds() - self.music_position
+        # converts the seconds in minutes and seconds (and percentage)
+        time_stamp = (str(int(time_stamp / 60)) + " minutes and " + str(int(time_stamp % 60)) + " seconds. (" + str(
+            round(time_stamp / duration_seconds * 100, 2)) + "%)")
+        embed = discord.Embed(title="Now playing")
+        embed.set_footer(text=f'*Requsted by {ctx.author.display_name}')
+        embed.add_field(name="Track title", value=track['title'], inline=False)
+        embed.add_field(name="Channel", value=track['channel'], inline=False)
+        embed.add_field(name="Duration", value=str(int(duration_seconds / 60)) + " minutes and " + str(
+            int(duration_seconds % 60)) + " seconds.", inline=False)
+        embed.add_field(name="Already played", value=time_stamp, inline=False)
+        await ctx.send(embed=embed)
+
+    # sends an embed with the lyrics of the song (or a link to it)
+    async def send_lyrics_embed(self, ctx, query: str = None):
+        if query is None or query.lstrip() == "":
+            query = self.current_song[0]['title']
+        lyrics_token = main.read_ini(main.config, 'settings.ini', 'variables', 'lyrics_token')
+        genius = lyricsgenius.Genius(lyrics_token)
+        try:
+            song = genius.search_song(title=query, get_full_info=False)
+        except UnboundLocalError:
+            await ctx.send(
+                'I did not find any song. Try to specify manually the title as an argument of the command (e.g.=!lyrics Bella Ciao')
+            return
+        if song is None:
+            await ctx.send(
+                'I did not find any song. Try to specify manually the title as an argument of the command (e.g.=!lyrics Bella Ciao)')
+            return
+        lyrics = song.lyrics
+        author = song.artist
+        title = song.title
+        image = song.song_art_image_url
+        embed = discord.Embed(title=title)
+        embed.set_author(name=author)
+        embed.description = f'*Requsted by {ctx.author.display_name}'
+        if len(lyrics) >= 2048:
+            embed.add_field(name='Link',
+                            value=f'Lyrics are too long for discord embeds. Here\'s a link, my dude:\n{song.url}')
+        else:
+            embed.set_footer(text=lyrics)
+        embed.set_image(url=image)
+        await ctx.send(embed=embed)
+
+    # saves the title of the songs in the music queue in a text file
+    async def save_playlist(self, ctx, playlist_name):
+        with open(f'playlists/{playlist_name}.txt', 'w') as file:
+            file.write(self.current_song[0]['title'] + "\n")
+            for song in self.music_queue:
+                file.write(song[0]['title'] + "\n")
+        await ctx.send(f'"{playlist_name}" successfully saved.')
+
+    # deletes a playlist by the name of it
+    async def delete_playlist_by_name(self, ctx, *pl_name):
+        pl_name = " ".join(pl_name).replace(" ", "_")
+        if (await self.is_playlist(ctx, pl_name))[0] is False:
+            await ctx.send(f'No playlist named "{pl_name}"')
+            return
+        try:
+            os.remove(f'playlists/{pl_name}.txt')
+            await ctx.send(f'Playlist {pl_name} successfully deleted.')
+        except:
+            await ctx.send(f'I could not delete the playlist named {pl_name}. Are you sure it does exists?')
+
+    # gets a list of all the saved playlists
+    async def get_playlists_list(self):
+        playlists_files = []
+        for file in os.listdir(os.path.dirname(__file__) + '/playlists'):  # the folder of the py project
+            filename = os.fsdecode(file)
+            if filename.endswith('.txt'):
+                playlists_files.append(filename.replace('.txt', ''))
+        return playlists_files
+
+    # returns a boolean
+    # it tells if the argument of !p command is a playlist
+    async def is_playlist(self, ctx, *args):
+        playlists_files = await self.get_playlists_list()
+        song_name = " ".join(args).replace(" ", "_")
+        if playlists_files.__contains__(song_name):
+            return True, song_name
+        return False, None
+
+    ### LISTENERS ###
+    # function called when the bot is online
+    @commands.Cog.listener()
+    async def on_ready(self):
+        now = datetime.datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+        await self.load_volume()
+        print(f"{now} - BOT IS FINALLY ONLINE!")
+
+    # command handler
+    @commands.Cog.listener()
+    async def on_command(self, ctx):
+        now = datetime.datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+        author = ctx.author.name
+        message = ctx.message.content
+        info = str({'time': now, 'author': author, 'message': message})
+        self.log.append(info + "\n")
+
+    # error handler
+    # reloads the bot if error in unknown or unmanagable
+    @commands.Cog.listener()
+    async def on_command_error(self, ctx, error):
+        if isinstance(error, commands.CommandNotFound):
+            wrong_command = str(error).split('"')[1]
+            prefix = main.read_ini(main.config, 'settings.ini', 'variables', 'prefix')
+            await ctx.send(
+                f'Command "{wrong_command}" is not available. Type {prefix}h to get a list of all the commands.')
+        elif isinstance(error, commands.CommandOnCooldown):
+            await ctx.send(f"You're asking for the same command too many times. Wait {error.retry_after:.2f} seconds.")
+        elif isinstance(error, youtube_dl.DownloadError):
+            await ctx.send('Couldn\'t download this song. 🙁')
+        elif isinstance(error, HTTPError):
+            await ctx.send('There was a problem downloading the song. Probably a temporarly error.')
+        else:
+            print(error)
+            await ctx.send("There is a unexpected error. The bot will reload soon.")
+            await self.disconnect_from_voice_channel()
+            await self.reload_bot()
+
+    ### COMMANDS ###
+    ## OFFLINE ##
+    @commands.command(name="offline")
+    # only me can call this command
+    @commands.is_owner()
+    async def offline(self, ctx):
+        await self.disconnect_from_voice_channel()
+        await ctx.send("Bot is now offline. See ya next time!")
+        await self.bot.close()
+
+    ## P ##
+    @commands.cooldown(1, 5, commands.BucketType.guild)
+    # cooldown (1 command every 5 seconds)
+    @commands.command(name="p")
+    async def p(self, ctx, *args):
+        await self.connect_to_voice_channel(ctx)
+        # loads playlist
+        if args[0] == "-pl":
+            await self.add_playlist_by_index(ctx, args[1])
+            return
+        result = await self.is_playlist(ctx, *args)
+        if result[0]:
+            await self.add_playlist_by_name(ctx, result[1])
+            return
+        # loads song
+        await self.add_song_from_yt(ctx, *args)
+
+    ## SKIP ##
+    @commands.command(name="skip")
+    async def skip(self, ctx):
+        if self.voice_channel is not None:
+            self.voice_channel.stop()
+            self.play_music()
+            await ctx.send('Playing the next song. 👍')
+
+    ## PING ##
+    @commands.command(name="ping")
+    async def ping(self, ctx):
+        if self.bot.latency < 0.2:
+            await ctx.send(f'Ping is {int(self.bot.latency * 1000)} ms. 👍')
+        else:
+            await ctx.send(f'Ping is {int(self.bot.latency * 1000)} ms. 👎')
+
+    ## NOW PLAYING ##
+    @commands.command(name="np")
+    async def now_playing(self, ctx):
+        if self.voice_channel is None:
+            await ctx.send("I am not connected to a voice channel at the moment.")
+            return
+        if not self.voice_channel.is_playing():
+            await ctx.send("I am not playing anything at the moment.")
+            return
+        await self.send_np_embed(ctx)
+
+    ## STOP ##
+    @commands.command(name="stop")
+    async def stop(self, ctx):
+        await self.disconnect_from_voice_channel()
+        await ctx.send("Disconnecting...")
+
+    ## VOLUME ##
+    @commands.command(name="volume")
+    async def volume(self, ctx, volume: int = None):
+        # not connected to voice channel
+        if self.voice_channel is None:
+            await ctx.send("Neither I am connected to a voice channel nor I am playing music.")
+            return
+        # sets the volume
+        if volume is not None:
+            if not 0 <= volume <= 200:
+                await ctx.send('Volume must me set in the range of values: 0-200')
+                return
+            self.voice_channel.source.volume = float(volume / 100)
+            self.current_volume = float(volume / 100)
+            await self.save_volume()
+            await ctx.send(f"Volume changed to: {volume}%.")
+        # gets the volume
+        else:
+            await ctx.send(f"Volume is set to: {int(self.current_volume * 100)}%.")
+            return
+
+    ## PREFIX ##
+    @commands.command(name="prefix")
+    async def prefix(self, ctx, prefix: str = None):
+        if prefix is None:
+            await ctx.send('You need to specify a new prefix.')
+            return
+        if not 1 <= len(prefix) <= 3:
+            await ctx.send('Prefix must be between 1 and 3 characters long.')
+            return
+        main.save_ini(main.config, 'settings.ini', 'variables', 'prefix', prefix)
+        await ctx.send(f'Prefix successfully changed to: "{prefix}".\nReloading the bot.')
+        await self.reload_bot()
+
+    ## NEXT ##
+    @commands.command(name="next")
+    async def next(self, ctx):
+        message_content = ""
+        if self.voice_channel is None:
+            await ctx.send('I am not connected to a voice channel.')
+            return
+        if len(self.music_queue) == 0:
+            await ctx.send('There is no song in the music queue.')
+            return
+        for i in range(0, len(self.music_queue)):
+            message_content += f"{i + 1}   -   '{self.music_queue[i][0]['title']}'\n"
+        await ctx.send(message_content)
+
+    ## PAUSE ##
+    @commands.command(name="pause")
+    async def pause(self, ctx):
+        if self.voice_channel is None:
+            await ctx.send('I am not connected to a voice channel.')
+            return
+        if not self.voice_channel.is_playing():
+            await ctx.send('I am not playing anything at the moment.')
+            return
+        self.voice_channel.pause()
+        await ctx.send('Music paused.')
+
+    ## RESUME ##
+    @commands.command(name="resume")
+    async def resume(self, ctx):
+        if self.voice_channel is None:
+            await ctx.send('I am not connected to a voice channel.')
+            return
+        if self.voice_channel.is_playing():
+            await ctx.send('I am already playing a song.')
+            return
+        self.voice_channel.resume()
+        await ctx.send('Music resumed.')
+
+    ## HELP ##
+    @commands.command(name="h")
+    async def help(self, ctx):
+        message_content = ""
+        # gets commands list from text file
+        with open('commands.txt', 'r') as file:
+            commands_list = file.readlines()
+        # list to str
+        # removes new lines and adds slash after every command
+        for command in commands_list:
+            command = command.rstrip("\n")
+            command += "\\"
+            message_content += command
+        # removes exceeding slash
+        message_content = message_content[:-1]
+        message_content += "\nvisit https://github.com/theLiuk23/Music-From-YT to get more information."
+        await ctx.send(f'Here is a list of the available commands:\n{message_content}')
+
+    ## LYRICS ##
+    @commands.command(name="lyrics")
+    async def lyrics(self, ctx, *title):
+        if self.voice_channel is None:
+            await ctx.send('I am not connected to a voice channel.')
+            return
+        if not self.voice_channel.is_playing():
+            await ctx.send('I am not playing anything at the moment.')
+            return
+        title = "".join(title)
+        await self.send_lyrics_embed(ctx, title)
+
+    ## PLAYLIST ##
+    @commands.command(name="pl")
+    async def playlist(self, ctx, *pl_name):
+        if len(pl_name) != 0:
+            if self.voice_channel is None:
+                await ctx.send('I am not connected to a voice channel.')
+                return
+            if not self.voice_channel.is_playing():
+                await ctx.send('I am not playing anything at the moment.')
+                return
+            if len(self.music_queue) <= 1:
+                await ctx.send('More than 1 song is needed to save a playlist')
+                return
+            pl_name = " ".join(pl_name).replace(" ", "_")
+            if os.path.exists(f'playlists/{pl_name}.txt'):
+                await ctx.send(f'A playlist named {pl_name} already exists.')
+                return
+            await self.save_playlist(ctx, pl_name)
+        else:
+            playlists = await self.get_playlists_list()
+            if len(playlists) != 0:
+                message_content = "Here's a list of the available playlists:\n"
+                for index in range(len(playlists)):
+                    message_content += f'{index + 1}  -  {playlists[index]}\n'
+                await ctx.send(message_content)
+
+    ## DELETE PLAYLIST ##
+    @commands.command(name="delpl")
+    async def delete_playlist(self, ctx, *pl_name):
+        if len(pl_name) == 0:
+            await ctx.send('Please write the name of the playlist you want to delete.')
+            return
+        await self.delete_playlist_by_name(ctx, *pl_name)

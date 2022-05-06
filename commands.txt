@@ -1,0 +1,15 @@
+delpl
+h
+next
+np
+offline
+pause
+ping
+p
+pl
+prefix
+resume
+lyrics
+stop
+skip
+volume

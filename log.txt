@@ -1,0 +1,42 @@
+{'time': '24/04/2022 15:00:15', 'author': 'Giulio Andreotti', 'message': '!p sonata pianoforte 21 mozart'}
+{'time': '24/04/2022 15:01:41', 'author': 'Giulio Andreotti', 'message': '!p sonata pianoforte 21 mozart'}
+{'time': '24/04/2022 15:02:26', 'author': 'Giulio Andreotti', 'message': '!p sonata pianoforte 21 mozart'}
+{'time': '24/04/2022 15:03:04', 'author': 'Giulio Andreotti', 'message': '!p sonata pianoforte 21 mozart'}
+{'time': '24/04/2022 15:03:25', 'author': 'Giulio Andreotti', 'message': '!p sonata pianoforte 23 mozart'}
+{'time': '24/04/2022 15:03:35', 'author': 'Giulio Andreotti', 'message': '!p jupiter mozart'}
+{'time': '24/04/2022 15:03:45', 'author': 'Giulio Andreotti', 'message': '!skip'}
+{'time': '24/04/2022 15:04:05', 'author': 'Giulio Andreotti', 'message': '!h'}
+{'time': '24/04/2022 15:15:27', 'author': 'Giulio Andreotti', 'message': '!p mozart'}
+{'time': '24/04/2022 15:22:06', 'author': 'Giulio Andreotti', 'message': '!p concerto 21 mozart'}
+{'time': '24/04/2022 15:22:26', 'author': 'Giulio Andreotti', 'message': '!p bach'}
+{'time': '24/04/2022 15:22:31', 'author': 'Giulio Andreotti', 'message': '!skip'}
+{'time': '24/04/2022 15:22:42', 'author': 'Giulio Andreotti', 'message': '!stop'}
+{'time': '24/04/2022 15:26:13', 'author': 'Giulio Andreotti', 'message': '!p concerto 41 mozart'}
+{'time': '24/04/2022 15:26:25', 'author': 'Giulio Andreotti', 'message': '!p concerto 41 mozart'}
+{'time': '24/04/2022 15:27:18', 'author': 'Giulio Andreotti', 'message': '!p concerto 41 mozart'}
+{'time': '24/04/2022 15:28:22', 'author': 'Giulio Andreotti', 'message': '!p bach'}
+{'time': '24/04/2022 15:28:28', 'author': 'Giulio Andreotti', 'message': '!skip'}
+{'time': '24/04/2022 15:28:36', 'author': 'Giulio Andreotti', 'message': '!stop'}
+{'time': '06/05/2022 18:23:33', 'author': 'Giulio Andreotti', 'message': '!p -pl 4'}
+{'time': '06/05/2022 18:23:39', 'author': 'Giulio Andreotti', 'message': '!p -pl 3'}
+{'time': '06/05/2022 18:25:18', 'author': 'Giulio Andreotti', 'message': '!pl'}
+{'time': '06/05/2022 18:25:34', 'author': 'Giulio Andreotti', 'message': '!pl'}
+{'time': '06/05/2022 18:25:40', 'author': 'Giulio Andreotti', 'message': '!p music'}
+{'time': '06/05/2022 18:25:55', 'author': 'Giulio Andreotti', 'message': '!p avicii'}
+{'time': '06/05/2022 18:26:11', 'author': 'Giulio Andreotti', 'message': '!lyrics'}
+{'time': '06/05/2022 18:26:31', 'author': 'Giulio Andreotti', 'message': '!lyrics Avicii Wake me up'}
+{'time': '06/05/2022 18:26:43', 'author': 'Giulio Andreotti', 'message': '!lyrics wake me up'}
+{'time': '06/05/2022 18:26:58', 'author': 'Giulio Andreotti', 'message': '!stop'}
+{'time': '06/05/2022 18:28:13', 'author': 'Giulio Andreotti', 'message': '!p bach'}
+{'time': '06/05/2022 18:28:29', 'author': 'Giulio Andreotti', 'message': '!stop'}
+{'time': '06/05/2022 18:29:37', 'author': 'Giulio Andreotti', 'message': '!p bach'}
+{'time': '06/05/2022 18:29:45', 'author': 'Giulio Andreotti', 'message': '!stop'}
+{'time': '06/05/2022 18:30:50', 'author': 'Giulio Andreotti', 'message': '!p avicii'}
+{'time': '06/05/2022 18:31:43', 'author': 'Giulio Andreotti', 'message': '!p bach'}
+{'time': '06/05/2022 18:31:51', 'author': 'Giulio Andreotti', 'message': '!stop'}
+{'time': '06/05/2022 18:31:43', 'author': 'Giulio Andreotti', 'message': '!p bach'}
+{'time': '06/05/2022 18:31:51', 'author': 'Giulio Andreotti', 'message': '!stop'}
+{'time': '06/05/2022 18:31:56', 'author': 'Giulio Andreotti', 'message': '!p bach'}
+{'time': '06/05/2022 18:32:06', 'author': 'Giulio Andreotti', 'message': '!p mozart'}
+{'time': '06/05/2022 18:32:10', 'author': 'Giulio Andreotti', 'message': '!skip'}
+{'time': '06/05/2022 18:32:14', 'author': 'Giulio Andreotti', 'message': '!stop'}
