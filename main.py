@@ -1,3 +1,15 @@
+'''
+Main script of the discord music bot.
+The script firstly checks if the ffmpeg library is installed
+Then it reads the token and the prefix from "settings.ini" (hidden from the GitHub repository)
+Finally it runs the "music.py" script, where there are all the commands' listeners
+N.B.=This code is written for Linux OS. It does not work properly on other operating systems.
+
+To get access of the GitHub repository, visit https://github.com/theLiuk23/Discord-music-bot
+If you have any question, write me at ldvcoding@gmail.com
+'''
+
+
 # used when running the proper bot
 from discord.ext import commands
 import configparser
@@ -49,24 +61,17 @@ def save_ini(config: configparser.RawConfigParser, filename: str, section: str, 
 
 
 # downloads ffmpeg if not already installed
-def download_ffmpeg(kernel: str):
+def download_ffmpeg():
     try:
         # if it does not run an exception it means ffmpeg is already installed
         subprocess.check_output(['which', 'ffmpeg'])
     except subprocess.CalledProcessError as e:
-        if kernel == 'Linux':
-            os.system('sudo apt install ffmpeg -y')
-        elif kernel == 'Windows':
-            os.system('pip install ffmpeg')
-        else:
-            print(f'Your operating system {kernel} is not supported.')
+        os.system('sudo apt install ffmpeg -y')
 
 
 def main():
-    # saves in settings.ini, under 'os' option the os currently in use
-    save_ini(config, 'settings.ini', 'variables', 'os', platform.system())
     # checks if ffmpeg is installed
-    download_ffmpeg(platform.system())
+    download_ffmpeg()
     # lastly it runs the bot
     prefix = read_ini(config, 'settings.ini', 'variables', 'prefix')
     token = read_ini(config, 'settings.ini', 'variables', 'bot_token')

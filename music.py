@@ -1,8 +1,22 @@
+'''
+Music class called from "main.py"
+All the commands are in "commands.txt" and all the information about them are
+in the documentation in the GitHub repository
+I file called "settings.ini" is hidden from the GitHub repository because it contains a bunch of 
+provate information, such as the bot token
+
+To get access of the GitHub repository, visit https://github.com/theLiuk23/Discord-music-bot
+If you have any question, write me at ldvcoding@gmail.com
+'''
+
+
 from urllib.error import HTTPError
+from xmlrpc.client import TRANSPORT_ERROR
 from discord.ext import commands
 import lyricsgenius
 import youtube_dl
 import discord
+import asyncio
 import datetime
 import main
 import sys
@@ -10,7 +24,6 @@ import os
 
 
 class MusicCog(commands.Cog):
-    # init is called when an instance of music_cog is created
     def __init__(self, bot):
         self.FFMPEG_OPTIONS = {
             'before_options': '-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5',
@@ -19,67 +32,61 @@ class MusicCog(commands.Cog):
             'format': 'bestaudio',
             'noplaylist': 'True',
             'quiet': 'True' }
-
-        # music info
         self.is_playing = False
         self.voice_channel = None
-        # music queue of index "-1" (the element that was 0 before deleting it)
-        self.current_song = None
-
-        # floats
+        self.current_song = None # music queue of index "-1" (the element that was 0 before deleting it)
         self.music_position = 0.0
         self.current_volume = 1.0
-
-        # lists
-        self.music_queue = []
-        # list of all the commands given in this session
-        self.log = []
-
+        self.music_queue = [] # music queue is a list, each element composed by a playlist (dictionary) and a voice channel
+        self.log = [] # list of all the commands given in this session
         self.bot = bot
 
-    # saves the log into a *.txt file
+
+    async def check_members(self):
+        if self.voice_channel is None:
+            return
+        members_count = len(self.voice_channel.channel.members)
+        if members_count == 1:
+            await self.disconnect_from_voice_channel()
+            return
+        print(str(members_count))
+        await asyncio.sleep(10)
+
+
+    # saves the log locally into a *.txt file
     async def save_log(self):
-        maximum = 1000
+        maximum_lines = 1000
         filename = 'log.txt'
-        # writes down the local log of used commands
         with open(filename, 'a') as file:
             file.writelines(self.log)
-        # gets the number of lines
-        length = sum(1 for line in open(filename, 'r'))
-        if length > maximum:
-            # gets a list of lines
-            with open(filename, 'r') as file:
-                data = file.read().splitlines(True)
-            # deletes old and exceeding lines (20% of the file)
-            with open(filename, 'w') as file:
-                file.writelines(data[maximum:])
+        length = sum(1 for line in open(filename, 'r')) # gets the number of lines
+        if length > maximum_lines:
+            with open(filename, 'r') as file: # gets a list of lines
+                data = file.read().splitlines(True)            
+            with open(filename, 'w') as file: # deletes old and exceeding lines (20% of the file)
+                file.writelines(data[maximum_lines:])
 
 
     # saves the volume when the bot disconnects
-    # it will load the previous volume when it goes online again
     async def save_volume(self):
-        volume = self.current_volume
-        main.save_ini(main.config, 'settings.ini', 'variables', 'volume', str(volume))
+        main.save_ini(main.config, 'settings.ini', 'variables', 'volume', str(self.current_volume))
 
 
     # loads previously saved volume
     async def load_volume(self):
-        volume = main.read_ini(main.config, 'settings.ini', 'variables', 'volume')
-        self.current_volume = float(volume)
+        self.current_volume = float(main.read_ini(main.config, 'settings.ini', 'variables', 'volume'))
 
 
     # reloads the bot if an error occurs
-    # called by music.py
     async def reload_bot(self):
         await self.bot.close()
-        os.execv(sys.executable, ['python3'] + ['main.py'])
+        os.execv(sys.executable, ['python3'] + ['main.py']) # launches from linux terminal
 
 
     # connects to the voice channel where the author is currently connected
     async def connect_to_voice_channel(self, ctx):
         voice = ctx.author.voice
-        # checks if the bot is already connected
-        if self.voice_channel is not None:
+        if self.voice_channel is not None: # checks if the bot is already connected
             if self.voice_channel.is_connected():
                 return
         if voice is None:
@@ -94,42 +101,36 @@ class MusicCog(commands.Cog):
         if self.voice_channel is not None:
             if self.voice_channel.is_connected():
                 await self.voice_channel.disconnect()
+        if len(self.log) != 0: # saves the log into a *.txt file
+            await self.save_log()
+        # refactors all the variables
         self.voice_channel = None
         self.current_song = None
         self.is_playing = False
         self.music_position = 0.0
         self.music_queue = []
-        # saves the log into a *.txt file
-        if len(self.log) != 0:
-            await self.save_log()
+        self.log = []
 
-
-    # plays next song in the queue
-    # this function can be called from
-    # the play command if the user adds a song to the music queue (and the bot is not playing anything)
-    # the play_music() function when the previous song ends
-    # the skip command (called by the user)
+    '''
+    this function can be called from
+        the play command if the user adds a song to the music queue (and the bot is not playing anything)
+        the play_music() function when the previous song ends
+        the skip command (called by the user)
+    
+    '''
     def play_music(self, error=None):
         if len(self.music_queue) > 0:
-            # music queue is a list, each element composed by a playlist (dictionary) and a voice channel
-            # so [0] means the first song, [0] means the playlist, ['source'] the value of source in the dictionary
-            song_url = self.music_queue[0][0]['source']
+            song_url = self.music_queue[0][0]['source'] # so [0] means the first song, [0] means the playlist, ['source'] the value of source in the dictionary
             self.current_song = self.music_queue[0]
-            # removes the first element because it is about to be played
-            self.music_queue.pop(0)
+            self.music_queue.pop(0) # removes the first element because it is about to be played
             if not self.voice_channel.is_playing():
-                # lambda code --> https://stackoverflow.com/questions/40746213/how-to-use-await-in-a-python-lambda
                 self.voice_channel.play(discord.FFmpegPCMAudio(song_url, **self.FFMPEG_OPTIONS), after=self.play_music)
-            # transforms the volume
-            self.voice_channel.source = discord.PCMVolumeTransformer(self.voice_channel.source,
-                                                                     volume=self.current_volume)
-            # gets the time stamp of the playing song
-            self.music_position = (datetime.datetime.now() - datetime.datetime.now().replace(hour=0, minute=0, second=0,
-                                                                                             microsecond=0)).total_seconds()
+            self.voice_channel.source = discord.PCMVolumeTransformer(self.voice_channel.source, volume=self.current_volume) # transforms the volume
+            self.music_position = (datetime.datetime.now() - datetime.datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)).total_seconds() # gets the time stamp of the playing song
             self.is_playing = True
         else:
             self.is_playing = False
-            # self.disconnect_from_voice_channel()
+
 
     # adds to the queue some info taken by the first result on YouTube
     async def add_song_from_yt(self, ctx, *args):
@@ -153,6 +154,7 @@ class MusicCog(commands.Cog):
         if self.is_playing is False:
             self.play_music()
 
+
     # adds to the queue some info taken by the first result on YouTube
     async def add_playlist_by_name(self, ctx, playlist_name):
         # gets the song info from YouTube
@@ -172,6 +174,7 @@ class MusicCog(commands.Cog):
             self.music_queue.append([song_info, ctx.author.voice.channel])
             if self.is_playing is False:
                 self.play_music()
+
 
     # adds to the queue some info taken by the first result on YouTube
     async def add_playlist_by_index(self, ctx, index):
@@ -193,8 +196,8 @@ class MusicCog(commands.Cog):
             if self.is_playing is False:
                 self.play_music()
 
+
     # gets the songs' titles in a playlist from the name of it
-    @staticmethod
     async def get_songs_in_playlist_by_name(playlist_name):
         async with open(f'playlists/{playlist_name}.txt', 'r') as file:
             songs = file.readlines()
@@ -203,10 +206,12 @@ class MusicCog(commands.Cog):
                     songs.remove(song)
             return songs
 
+
     # gets the songs' titles in a playlist from the index of the playlist
     async def get_songs_in_playlist_by_index(self, index):
         song = (await self.get_playlists_list())[int(index) - 1]
         return await self.get_songs_in_playlist_by_name(song)
+
 
     # sends an embed with a lot of information on the currently playing song
     async def send_np_embed(self, ctx):
@@ -227,6 +232,7 @@ class MusicCog(commands.Cog):
             int(duration_seconds % 60)) + " seconds.", inline=False)
         embed.add_field(name="Already played", value=time_stamp, inline=False)
         await ctx.send(embed=embed)
+
 
     # sends an embed with the lyrics of the song (or a link to it)
     async def send_lyrics_embed(self, ctx, query: str = None):
@@ -259,6 +265,7 @@ class MusicCog(commands.Cog):
         embed.set_image(url=image)
         await ctx.send(embed=embed)
 
+
     # saves the title of the songs in the music queue in a text file
     async def save_playlist(self, ctx, playlist_name):
         with open(f'playlists/{playlist_name}.txt', 'w') as file:
@@ -266,6 +273,7 @@ class MusicCog(commands.Cog):
             for song in self.music_queue:
                 file.write(song[0]['title'] + "\n")
         await ctx.send(f'"{playlist_name}" successfully saved.')
+
 
     # deletes a playlist by the name of it
     async def delete_playlist_by_name(self, ctx, *pl_name):
@@ -279,6 +287,7 @@ class MusicCog(commands.Cog):
         except:
             await ctx.send(f'I could not delete the playlist named {pl_name}. Are you sure it does exists?')
 
+
     # gets a list of all the saved playlists
     async def get_playlists_list(self):
         playlists_files = []
@@ -287,6 +296,7 @@ class MusicCog(commands.Cog):
             if filename.endswith('.txt'):
                 playlists_files.append(filename.replace('.txt', ''))
         return playlists_files
+
 
     # returns a boolean
     # it tells if the argument of !p command is a playlist
@@ -297,13 +307,16 @@ class MusicCog(commands.Cog):
             return True, song_name
         return False, None
 
+
     ### LISTENERS ###
     # function called when the bot is online
     @commands.Cog.listener()
     async def on_ready(self):
         now = datetime.datetime.now().strftime("%d/%m/%Y %H:%M:%S")
         await self.load_volume()
+        self.bot.loop.create_task(self.check_members())
         print(f"{now} - BOT IS FINALLY ONLINE!")
+
 
     # command handler
     @commands.Cog.listener()
@@ -313,6 +326,7 @@ class MusicCog(commands.Cog):
         message = ctx.message.content
         info = str({'time': now, 'author': author, 'message': message})
         self.log.append(info + "\n")
+
 
     # error handler
     # reloads the bot if error in unknown or unmanagable
@@ -335,6 +349,8 @@ class MusicCog(commands.Cog):
             await self.disconnect_from_voice_channel()
             await self.reload_bot()
 
+
+
     ### COMMANDS ###
     ## OFFLINE ##
     @commands.command(name="offline")
@@ -344,6 +360,7 @@ class MusicCog(commands.Cog):
         await self.disconnect_from_voice_channel()
         await ctx.send("Bot is now offline. See ya next time!")
         await self.bot.close()
+
 
     ## P ##
     @commands.cooldown(1, 5, commands.BucketType.guild)
@@ -362,6 +379,7 @@ class MusicCog(commands.Cog):
         # loads song
         await self.add_song_from_yt(ctx, *args)
 
+
     ## SKIP ##
     @commands.command(name="skip")
     async def skip(self, ctx):
@@ -370,6 +388,7 @@ class MusicCog(commands.Cog):
             self.play_music()
             await ctx.send('Playing the next song. 👍')
 
+
     ## PING ##
     @commands.command(name="ping")
     async def ping(self, ctx):
@@ -377,6 +396,7 @@ class MusicCog(commands.Cog):
             await ctx.send(f'Ping is {int(self.bot.latency * 1000)} ms. 👍')
         else:
             await ctx.send(f'Ping is {int(self.bot.latency * 1000)} ms. 👎')
+
 
     ## NOW PLAYING ##
     @commands.command(name="np")
@@ -389,11 +409,13 @@ class MusicCog(commands.Cog):
             return
         await self.send_np_embed(ctx)
 
+
     ## STOP ##
     @commands.command(name="stop")
     async def stop(self, ctx):
         await self.disconnect_from_voice_channel()
         await ctx.send("Disconnecting...")
+
 
     ## VOLUME ##
     @commands.command(name="volume")
@@ -416,6 +438,7 @@ class MusicCog(commands.Cog):
             await ctx.send(f"Volume is set to: {int(self.current_volume * 100)}%.")
             return
 
+
     ## PREFIX ##
     @commands.command(name="prefix")
     async def prefix(self, ctx, prefix: str = None):
@@ -428,6 +451,7 @@ class MusicCog(commands.Cog):
         main.save_ini(main.config, 'settings.ini', 'variables', 'prefix', prefix)
         await ctx.send(f'Prefix successfully changed to: "{prefix}".\nReloading the bot.')
         await self.reload_bot()
+
 
     ## NEXT ##
     @commands.command(name="next")
@@ -443,6 +467,7 @@ class MusicCog(commands.Cog):
             message_content += f"{i + 1}   -   '{self.music_queue[i][0]['title']}'\n"
         await ctx.send(message_content)
 
+
     ## PAUSE ##
     @commands.command(name="pause")
     async def pause(self, ctx):
@@ -455,6 +480,7 @@ class MusicCog(commands.Cog):
         self.voice_channel.pause()
         await ctx.send('Music paused.')
 
+
     ## RESUME ##
     @commands.command(name="resume")
     async def resume(self, ctx):
@@ -466,6 +492,7 @@ class MusicCog(commands.Cog):
             return
         self.voice_channel.resume()
         await ctx.send('Music resumed.')
+
 
     ## HELP ##
     @commands.command(name="h")
@@ -485,6 +512,7 @@ class MusicCog(commands.Cog):
         message_content += "\nvisit https://github.com/theLiuk23/Music-From-YT to get more information."
         await ctx.send(f'Here is a list of the available commands:\n{message_content}')
 
+
     ## LYRICS ##
     @commands.command(name="lyrics")
     async def lyrics(self, ctx, *title):
@@ -496,6 +524,7 @@ class MusicCog(commands.Cog):
             return
         title = "".join(title)
         await self.send_lyrics_embed(ctx, title)
+
 
     ## PLAYLIST ##
     @commands.command(name="pl")
@@ -522,6 +551,7 @@ class MusicCog(commands.Cog):
                 for index in range(len(playlists)):
                     message_content += f'{index + 1}  -  {playlists[index]}\n'
                 await ctx.send(message_content)
+
 
     ## DELETE PLAYLIST ##
     @commands.command(name="delpl")

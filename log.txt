@@ -40,3 +40,35 @@
 {'time': '06/05/2022 18:32:06', 'author': 'Giulio Andreotti', 'message': '!p mozart'}
 {'time': '06/05/2022 18:32:10', 'author': 'Giulio Andreotti', 'message': '!skip'}
 {'time': '06/05/2022 18:32:14', 'author': 'Giulio Andreotti', 'message': '!stop'}
+{'time': '06/05/2022 18:59:28', 'author': 'Giulio Andreotti', 'message': '!p mozarty'}
+{'time': '06/05/2022 18:59:35', 'author': 'Giulio Andreotti', 'message': '!np'}
+{'time': '06/05/2022 18:59:41', 'author': 'Giulio Andreotti', 'message': '!stop'}
+{'time': '06/05/2022 19:14:22', 'author': 'Giulio Andreotti', 'message': '!p mozart'}
+{'time': '06/05/2022 19:14:30', 'author': 'Giulio Andreotti', 'message': '!skip'}
+{'time': '06/05/2022 19:15:33', 'author': 'Giulio Andreotti', 'message': '!p mozart'}
+{'time': '06/05/2022 19:15:41', 'author': 'Giulio Andreotti', 'message': '!skip'}
+{'time': '06/05/2022 19:21:27', 'author': 'Giulio Andreotti', 'message': '!p hello'}
+{'time': '06/05/2022 19:21:35', 'author': 'Giulio Andreotti', 'message': '!skip'}
+{'time': '06/05/2022 19:47:17', 'author': 'Giulio Andreotti', 'message': '!p notturno 2 chopin'}
+{'time': '06/05/2022 19:47:26', 'author': 'Giulio Andreotti', 'message': '!skip'}
+{'time': '06/05/2022 19:48:20', 'author': 'Giulio Andreotti', 'message': '!p chopin'}
+{'time': '06/05/2022 19:48:31', 'author': 'Giulio Andreotti', 'message': '!skip'}
+{'time': '06/05/2022 19:48:50', 'author': 'Giulio Andreotti', 'message': '!p music'}
+{'time': '06/05/2022 19:49:00', 'author': 'Giulio Andreotti', 'message': '!p hello'}
+{'time': '06/05/2022 19:49:08', 'author': 'Giulio Andreotti', 'message': '!skip'}
+{'time': '06/05/2022 19:53:52', 'author': 'Giulio Andreotti', 'message': '!p music'}
+{'time': '06/05/2022 19:54:03', 'author': 'Giulio Andreotti', 'message': '!p bach'}
+{'time': '06/05/2022 19:54:10', 'author': 'Giulio Andreotti', 'message': '!skip'}
+{'time': '06/05/2022 19:54:21', 'author': 'Giulio Andreotti', 'message': '!p mozart'}
+{'time': '06/05/2022 19:54:30', 'author': 'Giulio Andreotti', 'message': '!p bach'}
+{'time': '06/05/2022 19:54:35', 'author': 'Giulio Andreotti', 'message': '!skip'}
+{'time': '06/05/2022 19:54:39', 'author': 'Giulio Andreotti', 'message': '!stop'}
+{'time': '06/05/2022 19:54:44', 'author': 'Giulio Andreotti', 'message': '!offline'}
+{'time': '06/05/2022 19:55:33', 'author': 'Giulio Andreotti', 'message': '!p mozart'}
+{'time': '06/05/2022 19:55:41', 'author': 'Giulio Andreotti', 'message': '!skip'}
+{'time': '06/05/2022 20:00:08', 'author': 'Giulio Andreotti', 'message': '!skip'}
+{'time': '06/05/2022 20:00:14', 'author': 'Giulio Andreotti', 'message': '!p music'}
+{'time': '06/05/2022 20:00:52', 'author': 'Giulio Andreotti', 'message': '!p mozart'}
+{'time': '06/05/2022 20:00:58', 'author': 'Giulio Andreotti', 'message': '!skip'}
+{'time': '06/05/2022 20:01:08', 'author': 'Giulio Andreotti', 'message': '!stop'}
+{'time': '06/05/2022 20:01:12', 'author': 'Giulio Andreotti', 'message': '!offline'}
