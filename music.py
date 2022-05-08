@@ -10,6 +10,7 @@ If you have any question, write me at ldvcoding@gmail.com
 '''
 
 
+import re
 from urllib.error import HTTPError
 from xmlrpc.client import TRANSPORT_ERROR
 from discord.ext import commands
@@ -87,8 +88,7 @@ class MusicCog(commands.Cog):
     async def connect_to_voice_channel(self, ctx):
         voice = ctx.author.voice
         if self.voice_channel is not None: # checks if the bot is already connected
-            if self.voice_channel.is_connected():
-                return
+            return
         if voice is None:
             await ctx.send('Please connect to a voice channel.')
             return
@@ -98,9 +98,12 @@ class MusicCog(commands.Cog):
 
     # disconnects from the voice channel
     async def disconnect_from_voice_channel(self):
-        if self.voice_channel is not None:
-            if self.voice_channel.is_connected():
-                await self.voice_channel.disconnect()
+        if self.voice_channel is None:
+            return
+        if not self.voice_channel.is_connected():
+            return
+        await self.voice_channel.disconnect()
+
         if len(self.log) != 0: # saves the log into a *.txt file
             await self.save_log()
         # refactors all the variables
@@ -111,18 +114,21 @@ class MusicCog(commands.Cog):
         self.music_queue = []
         self.log = []
 
-    '''
-    this function can be called from
-        the play command if the user adds a song to the music queue (and the bot is not playing anything)
-        the play_music() function when the previous song ends
-        the skip command (called by the user)
-    
-    '''
+
     def play_music(self, error=None):
+        '''
+        this function can be called from:
+            the play command if the user adds a song to the music queue (and the bot is not playing anything)
+            the play_music() function when the previous song ends
+            the skip command (called by the user)
+        
+        '''
         if len(self.music_queue) > 0:
             song_url = self.music_queue[0][0]['source'] # so [0] means the first song, [0] means the playlist, ['source'] the value of source in the dictionary
             self.current_song = self.music_queue[0]
             self.music_queue.pop(0) # removes the first element because it is about to be played
+            if self.voice_channel is None:
+                return
             if not self.voice_channel.is_playing():
                 self.voice_channel.play(discord.FFmpegPCMAudio(song_url, **self.FFMPEG_OPTIONS), after=self.play_music)
             self.voice_channel.source = discord.PCMVolumeTransformer(self.voice_channel.source, volume=self.current_volume) # transforms the volume
@@ -131,23 +137,23 @@ class MusicCog(commands.Cog):
         else:
             self.is_playing = False
 
-
+    
     # adds to the queue some info taken by the first result on YouTube
     async def add_song_from_yt(self, ctx, *args):
         if len(args) == 0:
-            await ctx.send("Input a song to play, please.")
+            await ctx.send("Write a song to play, please.")
             return
         query = " ".join(args)
-        # gets the song info from YouTube
-        with youtube_dl.YoutubeDL(self.YDL_OPTIONS) as ydl:
+        with youtube_dl.YoutubeDL(self.YDL_OPTIONS) as ydl: # gets the song info from YouTube
             try:
-                # temporary info
                 info_temp = ydl.extract_info("ytsearch:%s" % query, download=False)['entries'][0]
                 song_info = {'source': info_temp['formats'][0]['url'], 'title': info_temp['title'],
                              'duration': info_temp['duration'], 'channel': info_temp['channel']}
             except HTTPError:
-                await ctx.send(
-                    "This song is a stream or a playlist and it can't be downloaded. Try with a different query.")
+                await ctx.send("This song is a stream or a playlist and it can't be downloaded. Try with a different query.")
+                return
+            except:
+                await ctx.send(f'The song "{query}" can\'t be downloaded now.')
                 return
         self.music_queue.append([song_info, ctx.author.voice.channel])
         await ctx.send("***{}*** added to the queue.".format(song_info['title']))
@@ -157,7 +163,6 @@ class MusicCog(commands.Cog):
 
     # adds to the queue some info taken by the first result on YouTube
     async def add_playlist_by_name(self, ctx, playlist_name):
-        # gets the song info from YouTube
         songs = await self.get_songs_in_playlist_by_name(playlist_name)
         await ctx.send(f"Playlist ***{playlist_name}*** added to the queue.")
         for song in songs:
@@ -171,6 +176,9 @@ class MusicCog(commands.Cog):
                     await ctx.send(
                         "This song is a stream or a playlist and it can't be downloaded. Try with a different query.")
                     return
+                except:
+                    await ctx.send(f'The song "{song}" can\'t be downloaded now.')
+                    return
             self.music_queue.append([song_info, ctx.author.voice.channel])
             if self.is_playing is False:
                 self.play_music()
@@ -178,7 +186,6 @@ class MusicCog(commands.Cog):
 
     # adds to the queue some info taken by the first result on YouTube
     async def add_playlist_by_index(self, ctx, index):
-        # gets the song info from YouTube
         songs = await self.get_songs_in_playlist_by_index(index)
         await ctx.send(f"Playlist ***{(await self.get_playlists_list())[int(index) - 1]}*** added to the queue.")
         for song in songs:
@@ -192,19 +199,32 @@ class MusicCog(commands.Cog):
                     await ctx.send(
                         "This song is a stream or a playlist and it can't be downloaded. Try with a different query.")
                     return
+                except:
+                    await ctx.send(f'The song "{song}" can\'t be downloaded now.')
+                    return
             self.music_queue.append([song_info, ctx.author.voice.channel])
             if self.is_playing is False:
                 self.play_music()
 
 
     # gets the songs' titles in a playlist from the name of it
-    async def get_songs_in_playlist_by_name(playlist_name):
-        async with open(f'playlists/{playlist_name}.txt', 'r') as file:
+    async def get_songs_in_playlist_by_name(self, pl_name, ctx):
+        if not os.path.exists(f'playlists/{pl_name}.txt'):
+            await ctx.send(f'The requested playlist "{pl_name}" does not exist. To see a list of available playlists, type [prefix]pl.')
+            return
+        if pl_name is None:
+            await ctx.send("Please write the name of a playlist.")
+            return
+        if pl_name.strip() == "":
+            await ctx.send("Please write the name of a playlist.")
+            return
+        with open(f'playlists/{pl_name}.txt', 'r') as file:
             songs = file.readlines()
             for song in songs:
                 if song.lstrip() == "":
                     songs.remove(song)
-            return songs
+        return songs
+        
 
 
     # gets the songs' titles in a playlist from the index of the playlist
@@ -235,7 +255,7 @@ class MusicCog(commands.Cog):
 
 
     # sends an embed with the lyrics of the song (or a link to it)
-    async def send_lyrics_embed(self, ctx, query: str = None):
+    async def send_lyrics_embed(self, ctx, query=None):
         if query is None or query.lstrip() == "":
             query = self.current_song[0]['title']
         lyrics_token = main.read_ini(main.config, 'settings.ini', 'variables', 'lyrics_token')
@@ -298,14 +318,13 @@ class MusicCog(commands.Cog):
         return playlists_files
 
 
-    # returns a boolean
     # it tells if the argument of !p command is a playlist
     async def is_playlist(self, ctx, *args):
         playlists_files = await self.get_playlists_list()
         song_name = " ".join(args).replace(" ", "_")
         if playlists_files.__contains__(song_name):
-            return True, song_name
-        return False, None
+            return song_name
+        return None
 
 
     ### LISTENERS ###
@@ -363,39 +382,40 @@ class MusicCog(commands.Cog):
 
 
     ## P ##
-    @commands.cooldown(1, 5, commands.BucketType.guild)
-    # cooldown (1 command every 5 seconds)
+    @commands.cooldown(1, 5, commands.BucketType.guild) # cooldown (1 command every 5 seconds)
     @commands.command(name="p")
     async def p(self, ctx, *args):
+        if len(args) <= 0:
+            await ctx.send("Please write the name of the song you want to be played.")
+            return
         await self.connect_to_voice_channel(ctx)
-        # loads playlist
-        if args[0] == "-pl":
+        if args[0] == "-pl": # loads playlist
             await self.add_playlist_by_index(ctx, args[1])
             return
-        result = await self.is_playlist(ctx, *args)
-        if result[0]:
-            await self.add_playlist_by_name(ctx, result[1])
+        if await self.is_playlist(ctx, *args) is not None:
+            await self.add_playlist_by_name(ctx, )
             return
-        # loads song
-        await self.add_song_from_yt(ctx, *args)
+        await self.add_song_from_yt(ctx, *args) # loads song
 
 
     ## SKIP ##
     @commands.command(name="skip")
     async def skip(self, ctx):
-        if self.voice_channel is not None:
-            self.voice_channel.stop()
-            self.play_music()
-            await ctx.send('Playing the next song. 👍')
+        if self.voice_channel is None:
+            return
+        self.voice_channel.stop()
+        self.play_music()
+        await ctx.send('Playing the next song. 👍')
 
 
     ## PING ##
     @commands.command(name="ping")
     async def ping(self, ctx):
-        if self.bot.latency < 0.2:
-            await ctx.send(f'Ping is {int(self.bot.latency * 1000)} ms. 👍')
+        latency = self.bot.latency * 1000
+        if latency < 200:
+            await ctx.send('Pong: {} ms. 👍'.format(int(latency)))
         else:
-            await ctx.send(f'Ping is {int(self.bot.latency * 1000)} ms. 👎')
+            await ctx.send('Pong: {} ms. 👎'.format(int(latency)))
 
 
     ## NOW PLAYING ##
@@ -419,13 +439,12 @@ class MusicCog(commands.Cog):
 
     ## VOLUME ##
     @commands.command(name="volume")
-    async def volume(self, ctx, volume: int = None):
+    async def volume(self, ctx, volume=None):
         # not connected to voice channel
         if self.voice_channel is None:
-            await ctx.send("Neither I am connected to a voice channel nor I am playing music.")
+            await ctx.send("Either I am connected to a voice channel or I am playing music.")
             return
-        # sets the volume
-        if volume is not None:
+        if volume is not None: # sets the volume
             if not 0 <= volume <= 200:
                 await ctx.send('Volume must me set in the range of values: 0-200')
                 return
@@ -433,8 +452,7 @@ class MusicCog(commands.Cog):
             self.current_volume = float(volume / 100)
             await self.save_volume()
             await ctx.send(f"Volume changed to: {volume}%.")
-        # gets the volume
-        else:
+        else: # gets the volume
             await ctx.send(f"Volume is set to: {int(self.current_volume * 100)}%.")
             return
 
@@ -498,17 +516,13 @@ class MusicCog(commands.Cog):
     @commands.command(name="h")
     async def help(self, ctx):
         message_content = ""
-        # gets commands list from text file
-        with open('commands.txt', 'r') as file:
+        with open('commands.txt', 'r') as file: # gets commands list from text file
             commands_list = file.readlines()
-        # list to str
-        # removes new lines and adds slash after every command
-        for command in commands_list:
+        for command in commands_list: # removes new lines and adds slash after every command
             command = command.rstrip("\n")
             command += "\\"
             message_content += command
-        # removes exceeding slash
-        message_content = message_content[:-1]
+        message_content = message_content[:-1] # removes exceeding slash
         message_content += "\nvisit https://github.com/theLiuk23/Music-From-YT to get more information."
         await ctx.send(f'Here is a list of the available commands:\n{message_content}')
 
@@ -530,20 +544,29 @@ class MusicCog(commands.Cog):
     @commands.command(name="pl")
     async def playlist(self, ctx, *pl_name):
         if len(pl_name) != 0:
-            if self.voice_channel is None:
-                await ctx.send('I am not connected to a voice channel.')
+            if "--songs" in pl_name:
+                pl_name = " ".join([item for item in pl_name if item!="--songs"])
+                if len(pl_name) == 0:
+                    await ctx.send("Write the name of a playlist.")
+                    return
+                songs = await self.get_songs_in_playlist_by_name(pl_name.replace(" ", "_"), ctx)
+                await ctx.send(f"Here's a list of the songs in '{pl_name}':\n" + "".join(songs))
                 return
-            if not self.voice_channel.is_playing():
-                await ctx.send('I am not playing anything at the moment.')
-                return
+            pl_name = " ".join(pl_name).replace(" ", "_")
             if len(self.music_queue) <= 1:
                 await ctx.send('More than 1 song is needed to save a playlist')
                 return
-            pl_name = " ".join(pl_name).replace(" ", "_")
             if os.path.exists(f'playlists/{pl_name}.txt'):
                 await ctx.send(f'A playlist named {pl_name} already exists.')
                 return
-            await self.save_playlist(ctx, pl_name)
+            else:
+                if self.voice_channel is None:
+                    await ctx.send('I am not connected to a voice channel.')
+                    return
+                if not self.voice_channel.is_playing():
+                    await ctx.send('I am not playing anything at the moment.')
+                    return
+                await self.save_playlist(ctx, pl_name)
         else:
             playlists = await self.get_playlists_list()
             if len(playlists) != 0:
