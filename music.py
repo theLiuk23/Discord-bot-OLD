@@ -10,10 +10,10 @@ If you have any question, write me at ldvcoding@gmail.com
 '''
 
 
-import re
+from lib2to3.pgen2.token import MINUS
 from urllib.error import HTTPError
-from xmlrpc.client import TRANSPORT_ERROR
 from discord.ext import commands
+from discord.ext import tasks
 import lyricsgenius
 import youtube_dl
 import discord
@@ -31,6 +31,7 @@ class MusicCog(commands.Cog):
             'options': '-vn' }
         self.YDL_OPTIONS = {
             'format': 'bestaudio',
+            'ignoreerrors':'True',
             'noplaylist': 'True',
             'quiet': 'True' }
         self.is_playing = False
@@ -43,6 +44,7 @@ class MusicCog(commands.Cog):
         self.bot = bot
 
 
+    @tasks.loop(seconds=5)
     async def check_members(self):
         if self.voice_channel is None:
             return
@@ -50,8 +52,15 @@ class MusicCog(commands.Cog):
         if members_count == 1:
             await self.disconnect_from_voice_channel()
             return
-        print(str(members_count))
-        await asyncio.sleep(10)
+
+    
+    @tasks.loop(minutes=1)
+    async def check_is_playing(self):
+        if self.voice_channel is None:
+            return
+        if not self.voice_channel.is_playing():
+            await self.disconnect_from_voice_channel()
+            return
 
 
     # saves the log locally into a *.txt file
@@ -88,12 +97,13 @@ class MusicCog(commands.Cog):
     async def connect_to_voice_channel(self, ctx):
         voice = ctx.author.voice
         if self.voice_channel is not None: # checks if the bot is already connected
-            return
+            return False
         if voice is None:
             await ctx.send('Please connect to a voice channel.')
-            return
+            return False
         self.voice_channel = await voice.channel.connect()
         await ctx.guild.change_voice_state(channel=self.voice_channel.channel, self_mute=False, self_deaf=True)
+        return True
 
 
     # disconnects from the voice channel
@@ -121,13 +131,12 @@ class MusicCog(commands.Cog):
             the play command if the user adds a song to the music queue (and the bot is not playing anything)
             the play_music() function when the previous song ends
             the skip command (called by the user)
-        
         '''
         if len(self.music_queue) > 0:
             song_url = self.music_queue[0][0]['source'] # so [0] means the first song, [0] means the playlist, ['source'] the value of source in the dictionary
             self.current_song = self.music_queue[0]
             self.music_queue.pop(0) # removes the first element because it is about to be played
-            if self.voice_channel is None:
+            if self.voice_channel is None or not self.voice_channel.is_connected():
                 return
             if not self.voice_channel.is_playing():
                 self.voice_channel.play(discord.FFmpegPCMAudio(song_url, **self.FFMPEG_OPTIONS), after=self.play_music)
@@ -158,7 +167,7 @@ class MusicCog(commands.Cog):
         self.music_queue.append([song_info, ctx.author.voice.channel])
         await ctx.send("***{}*** added to the queue.".format(song_info['title']))
         if self.is_playing is False:
-            self.play_music()
+            self.splay_music()
 
 
     # adds to the queue some info taken by the first result on YouTube
@@ -181,7 +190,7 @@ class MusicCog(commands.Cog):
                     return
             self.music_queue.append([song_info, ctx.author.voice.channel])
             if self.is_playing is False:
-                self.play_music()
+                self.splay_music()
 
 
     # adds to the queue some info taken by the first result on YouTube
@@ -204,7 +213,7 @@ class MusicCog(commands.Cog):
                     return
             self.music_queue.append([song_info, ctx.author.voice.channel])
             if self.is_playing is False:
-                self.play_music()
+                self.splay_music()
 
 
     # gets the songs' titles in a playlist from the name of it
@@ -230,7 +239,7 @@ class MusicCog(commands.Cog):
     # gets the songs' titles in a playlist from the index of the playlist
     async def get_songs_in_playlist_by_index(self, index):
         song = (await self.get_playlists_list())[int(index) - 1]
-        return await self.get_songs_in_playlist_by_name(song)
+        return await self.get_songs_in_playlist_by_name(song, None)
 
 
     # sends an embed with a lot of information on the currently playing song
@@ -333,7 +342,8 @@ class MusicCog(commands.Cog):
     async def on_ready(self):
         now = datetime.datetime.now().strftime("%d/%m/%Y %H:%M:%S")
         await self.load_volume()
-        self.bot.loop.create_task(self.check_members())
+        self.check_members.start() # checks if bot is alone on voice channel 
+        self.check_is_playing.start() # checks if bot is not playing anything for 5 minutes
         print(f"{now} - BOT IS FINALLY ONLINE!")
 
 
@@ -388,8 +398,12 @@ class MusicCog(commands.Cog):
         if len(args) <= 0:
             await ctx.send("Please write the name of the song you want to be played.")
             return
-        await self.connect_to_voice_channel(ctx)
+        if not await self.connect_to_voice_channel(ctx):
+            return
         if args[0] == "-pl": # loads playlist
+            if len(args) == 1:
+                await ctx.send("Write the index of the playlist.")
+                return
             await self.add_playlist_by_index(ctx, args[1])
             return
         if await self.is_playlist(ctx, *args) is not None:
@@ -404,7 +418,7 @@ class MusicCog(commands.Cog):
         if self.voice_channel is None:
             return
         self.voice_channel.stop()
-        self.play_music()
+        self.splay_music()
         await ctx.send('Playing the next song. 👍')
 
 

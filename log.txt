@@ -72,3 +72,26 @@
 {'time': '06/05/2022 20:00:58', 'author': 'Giulio Andreotti', 'message': '!skip'}
 {'time': '06/05/2022 20:01:08', 'author': 'Giulio Andreotti', 'message': '!stop'}
 {'time': '06/05/2022 20:01:12', 'author': 'Giulio Andreotti', 'message': '!offline'}
+{'time': '09/05/2022 18:52:44', 'author': 'Giulio Andreotti', 'message': '!pl --songs concerti brandeburghesi'}
+{'time': '09/05/2022 18:53:08', 'author': 'Giulio Andreotti', 'message': '!p slipping through my fingers'}
+{'time': '09/05/2022 18:53:22', 'author': 'Giulio Andreotti', 'message': '!p fernando'}
+{'time': '09/05/2022 18:53:34', 'author': 'Giulio Andreotti', 'message': '!p money money money'}
+{'time': '09/05/2022 18:59:39', 'author': 'Giulio Andreotti', 'message': '!offline'}
+{'time': '09/05/2022 19:00:12', 'author': 'Giulio Andreotti', 'message': '!p -pl 1'}
+{'time': '09/05/2022 19:01:24', 'author': 'Giulio Andreotti', 'message': '!p -pl 1'}
+{'time': '09/05/2022 19:08:39', 'author': 'Giulio Andreotti', 'message': '!p -pl 1'}
+{'time': '09/05/2022 19:10:04', 'author': 'Giulio Andreotti', 'message': '!p -pl 1'}
+{'time': '09/05/2022 19:11:35', 'author': 'Giulio Andreotti', 'message': '!p -pl 1'}
+{'time': '09/05/2022 19:11:43', 'author': 'Giulio Andreotti', 'message': '!p -pl'}
+{'time': '09/05/2022 19:13:44', 'author': 'Giulio Andreotti', 'message': '!p -pl 1'}
+{'time': '09/05/2022 19:13:57', 'author': 'Giulio Andreotti', 'message': '!p -pl'}
+{'time': '09/05/2022 19:13:59', 'author': 'Giulio Andreotti', 'message': '!p -pl'}
+{'time': '09/05/2022 19:14:32', 'author': 'Giulio Andreotti', 'message': '!stop'}
+{'time': '09/05/2022 19:14:34', 'author': 'Giulio Andreotti', 'message': '!p -pl'}
+{'time': '09/05/2022 19:14:52', 'author': 'Giulio Andreotti', 'message': '!p -pl'}
+{'time': '09/05/2022 19:15:18', 'author': 'Giulio Andreotti', 'message': '!p -pl'}
+{'time': '09/05/2022 20:09:14', 'author': 'Giulio Andreotti', 'message': '!p curre curre gualgiò 99'}
+{'time': '09/05/2022 20:09:28', 'author': 'Giulio Andreotti', 'message': '!skip'}
+{'time': '09/05/2022 20:13:10', 'author': 'Giulio Andreotti', 'message': '!p curre curre gualgiò 99'}
+{'time': '09/05/2022 20:13:47', 'author': 'Giulio Andreotti', 'message': '!np'}
+{'time': '09/05/2022 20:13:51', 'author': 'Giulio Andreotti', 'message': '!skip'}
