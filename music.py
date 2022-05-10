@@ -10,14 +10,12 @@ If you have any question, write me at ldvcoding@gmail.com
 '''
 
 
-from lib2to3.pgen2.token import MINUS
 from urllib.error import HTTPError
 from discord.ext import commands
 from discord.ext import tasks
 import lyricsgenius
 import youtube_dl
 import discord
-import asyncio
 import datetime
 import main
 import sys
