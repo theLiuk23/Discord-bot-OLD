@@ -15,7 +15,6 @@ from discord.ext import commands
 import configparser
 import discord.ext
 import subprocess
-import platform
 import discord
 import music
 import os
