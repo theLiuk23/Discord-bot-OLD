@@ -165,7 +165,7 @@ class MusicCog(commands.Cog):
         self.music_queue.append([song_info, ctx.author.voice.channel])
         await ctx.send("***{}*** added to the queue.".format(song_info['title']))
         if self.is_playing is False:
-            self.splay_music()
+            self.play_music()
 
 
     # adds to the queue some info taken by the first result on YouTube
@@ -188,7 +188,7 @@ class MusicCog(commands.Cog):
                     return
             self.music_queue.append([song_info, ctx.author.voice.channel])
             if self.is_playing is False:
-                self.splay_music()
+                self.play_music()
 
 
     # adds to the queue some info taken by the first result on YouTube
@@ -211,7 +211,7 @@ class MusicCog(commands.Cog):
                     return
             self.music_queue.append([song_info, ctx.author.voice.channel])
             if self.is_playing is False:
-                self.splay_music()
+                self.play_music()
 
 
     # gets the songs' titles in a playlist from the name of it
@@ -416,7 +416,7 @@ class MusicCog(commands.Cog):
         if self.voice_channel is None:
             return
         self.voice_channel.stop()
-        self.splay_music()
+        self.play_music()
         await ctx.send('Playing the next song. 👍')
 
 

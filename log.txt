@@ -95,3 +95,4 @@
 {'time': '09/05/2022 20:13:10', 'author': 'Giulio Andreotti', 'message': '!p curre curre gualgiò 99'}
 {'time': '09/05/2022 20:13:47', 'author': 'Giulio Andreotti', 'message': '!np'}
 {'time': '09/05/2022 20:13:51', 'author': 'Giulio Andreotti', 'message': '!skip'}
+{'time': '14/05/2022 20:30:43', 'author': 'Giulio Andreotti', 'message': '!p last three piano sonatas shubert'}
