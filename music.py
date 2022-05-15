@@ -44,6 +44,9 @@ class MusicCog(commands.Cog):
 
     @tasks.loop(seconds=5)
     async def check_members(self):
+        '''
+        it checks every 5 seconds if the bot is alone in a voice channel.
+        '''
         if self.voice_channel is None:
             return
         members_count = len(self.voice_channel.channel.members)
@@ -54,6 +57,9 @@ class MusicCog(commands.Cog):
     
     @tasks.loop(minutes=1)
     async def check_is_playing(self):
+        '''
+        it checks every minute if the bot is not playing anymore.
+        '''
         if self.voice_channel is None:
             return
         if not self.voice_channel.is_playing():
@@ -61,8 +67,10 @@ class MusicCog(commands.Cog):
             return
 
 
-    # saves the log locally into a *.txt file
     async def save_log(self):
+        '''
+        it saves the local list "log" in a txt file named "log.txt" containing all the given commands.
+        '''
         maximum_lines = 1000
         filename = 'log.txt'
         with open(filename, 'a') as file:
@@ -75,24 +83,32 @@ class MusicCog(commands.Cog):
                 file.writelines(data[maximum_lines:])
 
 
-    # saves the volume when the bot disconnects
     async def save_volume(self):
+        '''
+        it saves the volume in "settings.ini" so that the bot can start again with the same volume as the last session.
+        '''
         main.save_ini(main.config, 'settings.ini', 'variables', 'volume', str(self.current_volume))
 
 
-    # loads previously saved volume
     async def load_volume(self):
+        '''
+        it loads the volume from the last session. The float value is being read in "settings.ini"
+        '''
         self.current_volume = float(main.read_ini(main.config, 'settings.ini', 'variables', 'volume'))
 
 
-    # reloads the bot if an error occurs
     async def reload_bot(self):
+        '''
+        if an unhandled exception is generated, the bot will try to reload.
+        '''
         await self.bot.close()
         os.execv(sys.executable, ['python3'] + ['main.py']) # launches from linux terminal
 
 
-    # connects to the voice channel where the author is currently connected
     async def connect_to_voice_channel(self, ctx):
+        '''
+        the bot connects to a voice channel. It returns a boolean wheather the connection was successful.
+        '''
         voice = ctx.author.voice
         if self.voice_channel is not None: # checks if the bot is already connected
             return False
@@ -104,14 +120,15 @@ class MusicCog(commands.Cog):
         return True
 
 
-    # disconnects from the voice channel
     async def disconnect_from_voice_channel(self):
+        '''
+        the bot disconnects from the voice channel. It returns a boolean wheather the disconnection was successful.
+        '''
         if self.voice_channel is None:
-            return
+            return False
         if not self.voice_channel.is_connected():
-            return
+            return False
         await self.voice_channel.disconnect()
-
         if len(self.log) != 0: # saves the log into a *.txt file
             await self.save_log()
         # refactors all the variables
@@ -121,6 +138,7 @@ class MusicCog(commands.Cog):
         self.music_position = 0.0
         self.music_queue = []
         self.log = []
+        return True
 
 
     def play_music(self, error=None):
@@ -145,8 +163,10 @@ class MusicCog(commands.Cog):
             self.is_playing = False
 
     
-    # adds to the queue some info taken by the first result on YouTube
     async def add_song_from_yt(self, ctx, *args):
+        '''
+        it adds to the list "music_queue" a song loaded from YouTube. Then if the bot isn't already playing, it loads "play_music" function.
+        '''
         if len(args) == 0:
             await ctx.send("Write a song to play, please.")
             return
@@ -168,8 +188,10 @@ class MusicCog(commands.Cog):
             self.play_music()
 
 
-    # adds to the queue some info taken by the first result on YouTube
     async def add_playlist_by_name(self, ctx, playlist_name):
+        '''
+        it adds to the list "music_queue" some info taken by the first result on YouTube.
+        '''
         songs = await self.get_songs_in_playlist_by_name(playlist_name)
         await ctx.send(f"Playlist ***{playlist_name}*** added to the queue.")
         for song in songs:
@@ -191,8 +213,10 @@ class MusicCog(commands.Cog):
                 self.play_music()
 
 
-    # adds to the queue some info taken by the first result on YouTube
     async def add_playlist_by_index(self, ctx, index):
+        '''
+        it adds to the list "music_queue" some info taken by the first result on YouTube.
+        '''
         songs = await self.get_songs_in_playlist_by_index(index)
         await ctx.send(f"Playlist ***{(await self.get_playlists_list())[int(index) - 1]}*** added to the queue.")
         for song in songs:
@@ -214,8 +238,10 @@ class MusicCog(commands.Cog):
                 self.play_music()
 
 
-    # gets the songs' titles in a playlist from the name of it
     async def get_songs_in_playlist_by_name(self, pl_name, ctx):
+        '''
+        it gets the songs' titles in a playlist from its name.
+        '''
         if not os.path.exists(f'playlists/{pl_name}.txt'):
             await ctx.send(f'The requested playlist "{pl_name}" does not exist. To see a list of available playlists, type [prefix]pl.')
             return
@@ -233,15 +259,18 @@ class MusicCog(commands.Cog):
         return songs
         
 
-
-    # gets the songs' titles in a playlist from the index of the playlist
     async def get_songs_in_playlist_by_index(self, index):
+        '''
+        it gets the songs' titles in a playlist from the index of it.
+        '''
         song = (await self.get_playlists_list())[int(index) - 1]
         return await self.get_songs_in_playlist_by_name(song, None)
 
 
-    # sends an embed with a lot of information on the currently playing song
     async def send_np_embed(self, ctx):
+        '''
+        it sends an embed with a lot of information about the current playing song.
+        '''
         track = self.current_song[0]
         if self.music_position is None:
             await ctx.send('I could not get the song length.')
@@ -261,8 +290,10 @@ class MusicCog(commands.Cog):
         await ctx.send(embed=embed)
 
 
-    # sends an embed with the lyrics of the song (or a link to it)
     async def send_lyrics_embed(self, ctx, query=None):
+        '''
+        it sends an embed with the lyrics of the song (or a link to it).
+        '''
         if query is None or query.lstrip() == "":
             query = self.current_song[0]['title']
         lyrics_token = main.read_ini(main.config, 'settings.ini', 'variables', 'lyrics_token')
@@ -293,8 +324,10 @@ class MusicCog(commands.Cog):
         await ctx.send(embed=embed)
 
 
-    # saves the title of the songs in the music queue in a text file
     async def save_playlist(self, ctx, playlist_name):
+        '''
+        it saves the title of the songs in the list "music_queue" in a text file.
+        '''
         with open(f'playlists/{playlist_name}.txt', 'w') as file:
             file.write(self.current_song[0]['title'] + "\n")
             for song in self.music_queue:
@@ -302,8 +335,10 @@ class MusicCog(commands.Cog):
         await ctx.send(f'"{playlist_name}" successfully saved.')
 
 
-    # deletes a playlist by the name of it
     async def delete_playlist_by_name(self, ctx, *pl_name):
+        '''
+        it deletes a playlist by the name of it.
+        '''
         pl_name = " ".join(pl_name).replace(" ", "_")
         if (await self.is_playlist(ctx, pl_name))[0] is False:
             await ctx.send(f'No playlist named "{pl_name}"')
@@ -315,8 +350,10 @@ class MusicCog(commands.Cog):
             await ctx.send(f'I could not delete the playlist named {pl_name}. Are you sure it does exists?')
 
 
-    # gets a list of all the saved playlists
     async def get_playlists_list(self):
+        '''
+        it gets a list of all the saved playlists.
+        '''
         playlists_files = []
         for file in os.listdir(os.path.dirname(__file__) + '/playlists'):  # the folder of the py project
             filename = os.fsdecode(file)
@@ -325,8 +362,10 @@ class MusicCog(commands.Cog):
         return playlists_files
 
 
-    # it tells if the argument of !p command is a playlist
     async def is_playlist(self, ctx, *args):
+        '''
+        it tells if the argument of !p command is a playlist.
+        '''
         playlists_files = await self.get_playlists_list()
         song_name = " ".join(args).replace(" ", "_")
         if playlists_files.__contains__(song_name):
@@ -335,9 +374,12 @@ class MusicCog(commands.Cog):
 
 
     ### LISTENERS ###
-    # function called when the bot is online
     @commands.Cog.listener()
     async def on_ready(self):
+        '''
+        it loads every time the bot goes online.
+        It starts the 2 loops: "check_members" and "check_is_playing"
+        '''
         now = datetime.datetime.now().strftime("%d/%m/%Y %H:%M:%S")
         await self.load_volume()
         self.check_members.start() # checks if bot is alone on voice channel 
@@ -345,9 +387,12 @@ class MusicCog(commands.Cog):
         print(f"{now} - BOT IS FINALLY ONLINE!")
 
 
-    # command handler
     @commands.Cog.listener()
     async def on_command(self, ctx):
+        '''
+        it loads every time a command is being written.
+        it gets some info about the command and the user, and save it in the log.
+        '''
         now = datetime.datetime.now().strftime("%d/%m/%Y %H:%M:%S")
         author = ctx.author.name
         message = ctx.message.content
@@ -355,10 +400,16 @@ class MusicCog(commands.Cog):
         self.log.append(info + "\n")
 
 
-    # error handler
-    # reloads the bot if error in unknown or unmanagable
     @commands.Cog.listener()
     async def on_command_error(self, ctx, error):
+        '''
+        it loads every time an error occurs. The handled errors are: \n
+            CommandNotFound (discord) \n
+            CommandOnCooldown (discord) \n
+            DownloadError (youtube_dl) \n
+            HTTPError (urllib3) \n
+        if the error is unhandled, the function "reload_bot" will be called.
+        '''
         if isinstance(error, commands.CommandNotFound):
             wrong_command = str(error).split('"')[1]
             prefix = main.read_ini(main.config, 'settings.ini', 'variables', 'prefix')
@@ -377,11 +428,9 @@ class MusicCog(commands.Cog):
             await self.reload_bot()
 
 
-
     ### COMMANDS ###
     ## OFFLINE ##
     @commands.command(name="offline")
-    # only me can call this command
     @commands.is_owner()
     async def offline(self, ctx):
         await self.disconnect_from_voice_channel()

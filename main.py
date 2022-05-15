@@ -33,8 +33,10 @@ prefix = None
 client = None
 
 
-# reads an option in a *.ini file
 def read_ini(config: configparser.RawConfigParser, filename: str, section: str, option: str) -> str:
+    '''
+    it reads the variables stored in the hidden file "settings.ini"
+    '''
     config.read(filename)
     # checks if the option exists
     if not config.sections().__contains__(section):
@@ -46,8 +48,10 @@ def read_ini(config: configparser.RawConfigParser, filename: str, section: str, 
     return config.get(section, option)
 
 
-# saves an option to a *.ini file
 def save_ini(config: configparser.RawConfigParser, filename: str, section: str, option: str, value: str):
+    '''
+    it changes the variables' values stored in the hidden file "settings.ini"
+    '''
     # reads the *.ini file
     config.read(filename)
     # if section does not exist, create it
@@ -59,8 +63,10 @@ def save_ini(config: configparser.RawConfigParser, filename: str, section: str, 
         config.write(file)
 
 
-# downloads ffmpeg if not already installed
 def download_ffmpeg():
+    '''
+    it checks whenether ffmpeg is installed in the machine and eventually installs it
+    '''
     try:
         # if it does not run an exception it means ffmpeg is already installed
         subprocess.check_output(['which', 'ffmpeg'])
@@ -69,7 +75,6 @@ def download_ffmpeg():
 
 
 def main():
-    # checks if ffmpeg is installed
     download_ffmpeg()
     # lastly it runs the bot
     prefix = read_ini(config, 'settings.ini', 'variables', 'prefix')
