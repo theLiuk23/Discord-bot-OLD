@@ -133,3 +133,5 @@
 {'time': '22/05/2022 14:04:15', 'author': 'Giulio Andreotti', 'message': '!skip'}
 {'time': '22/05/2022 14:04:24', 'author': 'Giulio Andreotti', 'message': '!p bach'}
 {'time': '22/05/2022 14:04:35', 'author': 'Giulio Andreotti', 'message': '!pause'}
+{'time': '22/05/2022 14:07:02', 'author': 'Giulio Andreotti', 'message': '!p masters of nurimberg wagner'}
+{'time': '22/05/2022 14:07:12', 'author': 'Giulio Andreotti', 'message': '!np'}
