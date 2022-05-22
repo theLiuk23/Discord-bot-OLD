@@ -96,3 +96,40 @@
 {'time': '09/05/2022 20:13:47', 'author': 'Giulio Andreotti', 'message': '!np'}
 {'time': '09/05/2022 20:13:51', 'author': 'Giulio Andreotti', 'message': '!skip'}
 {'time': '14/05/2022 20:30:43', 'author': 'Giulio Andreotti', 'message': '!p last three piano sonatas shubert'}
+{'time': '22/05/2022 13:51:32', 'author': 'Giulio Andreotti', 'message': '!skip'}
+{'time': '22/05/2022 13:51:42', 'author': 'Giulio Andreotti', 'message': '!skip'}
+{'time': '22/05/2022 13:51:50', 'author': 'Giulio Andreotti', 'message': '!p mozart'}
+{'time': '22/05/2022 13:51:58', 'author': 'Giulio Andreotti', 'message': '!skip'}
+{'time': '22/05/2022 13:52:03', 'author': 'Giulio Andreotti', 'message': '!skip'}
+{'time': '22/05/2022 13:52:07', 'author': 'Giulio Andreotti', 'message': '!skip'}
+{'time': '22/05/2022 13:54:55', 'author': 'Giulio Andreotti', 'message': '!p bella ciao'}
+{'time': '22/05/2022 13:55:01', 'author': 'Giulio Andreotti', 'message': '!pause'}
+{'time': '22/05/2022 13:55:04', 'author': 'Giulio Andreotti', 'message': '!skip'}
+{'time': '22/05/2022 13:55:08', 'author': 'Giulio Andreotti', 'message': '!resume'}
+{'time': '22/05/2022 13:55:14', 'author': 'Giulio Andreotti', 'message': '!offline'}
+{'time': '22/05/2022 13:56:52', 'author': 'Giulio Andreotti', 'message': '!p bella ciao'}
+{'time': '22/05/2022 13:56:58', 'author': 'Giulio Andreotti', 'message': '!skip'}
+{'time': '22/05/2022 13:57:03', 'author': 'Giulio Andreotti', 'message': '!np'}
+{'time': '22/05/2022 13:57:12', 'author': 'Giulio Andreotti', 'message': '!p bella ciao'}
+{'time': '22/05/2022 13:57:29', 'author': 'Giulio Andreotti', 'message': '!p mozart'}
+{'time': '22/05/2022 13:57:38', 'author': 'Giulio Andreotti', 'message': '!stop'}
+{'time': '22/05/2022 13:57:41', 'author': 'Giulio Andreotti', 'message': '!p mozart'}
+{'time': '22/05/2022 13:57:57', 'author': 'Giulio Andreotti', 'message': '!p mozart'}
+{'time': '22/05/2022 13:58:05', 'author': 'Giulio Andreotti', 'message': '!pause'}
+{'time': '22/05/2022 13:58:09', 'author': 'Giulio Andreotti', 'message': '!skip'}
+{'time': '22/05/2022 13:58:14', 'author': 'Giulio Andreotti', 'message': '!np'}
+{'time': '22/05/2022 13:58:19', 'author': 'Giulio Andreotti', 'message': '!p mozart'}
+{'time': '22/05/2022 13:58:30', 'author': 'Giulio Andreotti', 'message': '!stop'}
+{'time': '22/05/2022 13:58:33', 'author': 'Giulio Andreotti', 'message': '!p mozart'}
+{'time': '22/05/2022 13:58:41', 'author': 'Giulio Andreotti', 'message': '!skip'}
+{'time': '22/05/2022 13:58:52', 'author': 'Giulio Andreotti', 'message': '!p mozart'}
+{'time': '22/05/2022 13:58:57', 'author': 'Giulio Andreotti', 'message': '!skip'}
+{'time': '22/05/2022 13:59:01', 'author': 'Giulio Andreotti', 'message': '!p bach'}
+{'time': '22/05/2022 14:02:52', 'author': 'Giulio Andreotti', 'message': '!skip'}
+{'time': '22/05/2022 14:02:54', 'author': 'Giulio Andreotti', 'message': '!p mozart'}
+{'time': '22/05/2022 14:03:04', 'author': 'Giulio Andreotti', 'message': '!skip'}
+{'time': '22/05/2022 14:03:12', 'author': 'Giulio Andreotti', 'message': '!p bach'}
+{'time': '22/05/2022 14:04:09', 'author': 'Giulio Andreotti', 'message': '!p mozart'}
+{'time': '22/05/2022 14:04:15', 'author': 'Giulio Andreotti', 'message': '!skip'}
+{'time': '22/05/2022 14:04:24', 'author': 'Giulio Andreotti', 'message': '!p bach'}
+{'time': '22/05/2022 14:04:35', 'author': 'Giulio Andreotti', 'message': '!pause'}

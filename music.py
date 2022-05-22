@@ -10,6 +10,7 @@ If you have any question, write me at ldvcoding@gmail.com
 '''
 
 
+import re
 from urllib.error import HTTPError
 from discord.ext import commands
 from discord.ext import tasks
@@ -55,10 +56,10 @@ class MusicCog(commands.Cog):
             return
 
     
-    @tasks.loop(minutes=1)
+    @tasks.loop(minutes=10)
     async def check_is_playing(self):
         '''
-        it checks every minute if the bot is not playing anymore.
+        it checks every 10 minutes if the bot is not playing anymore.
         '''
         if self.voice_channel is None:
             return
@@ -97,17 +98,18 @@ class MusicCog(commands.Cog):
         self.current_volume = float(main.read_ini(main.config, 'settings.ini', 'variables', 'volume'))
 
 
-    async def reload_bot(self):
+    async def reload_bot(self, ctx):
         '''
         if an unhandled exception is generated, the bot will try to reload.
         '''
+        await ctx.send("Bot is now reloading...")
         await self.bot.close()
         os.execv(sys.executable, ['python3'] + ['main.py']) # launches from linux terminal
 
 
     async def connect_to_voice_channel(self, ctx):
         '''
-        the bot connects to a voice channel. It returns a boolean wheather the connection was successful.
+        the bot connects to a voice channel. It returns a boolean whether the connection was successful.
         '''
         voice = ctx.author.voice
         if self.voice_channel is not None: # checks if the bot is already connected
@@ -122,7 +124,7 @@ class MusicCog(commands.Cog):
 
     async def disconnect_from_voice_channel(self):
         '''
-        the bot disconnects from the voice channel. It returns a boolean wheather the disconnection was successful.
+        the bot disconnects from the voice channel. It returns a boolean whether the disconnection was successful.
         '''
         if self.voice_channel is None:
             return False
@@ -425,7 +427,7 @@ class MusicCog(commands.Cog):
             print(error)
             await ctx.send("There is a unexpected error. The bot will reload soon.")
             await self.disconnect_from_voice_channel()
-            await self.reload_bot()
+            await self.reload_bot(ctx)
 
 
     ### COMMANDS ###
@@ -463,6 +465,11 @@ class MusicCog(commands.Cog):
     @commands.command(name="skip")
     async def skip(self, ctx):
         if self.voice_channel is None:
+            await ctx.send("Since I am not connected to a voice channel, I am neither playing some music.")
+            return
+        if len(self.music_queue) <= 0:
+            await self.disconnect_from_voice_channel()
+            await ctx.send("There is no song in the music queue.")
             return
         self.voice_channel.stop()
         self.play_music()
@@ -529,7 +536,7 @@ class MusicCog(commands.Cog):
             return
         main.save_ini(main.config, 'settings.ini', 'variables', 'prefix', prefix)
         await ctx.send(f'Prefix successfully changed to: "{prefix}".\nReloading the bot.')
-        await self.reload_bot()
+        await self.reload_bot(ctx)
 
 
     ## NEXT ##
@@ -646,3 +653,6 @@ class MusicCog(commands.Cog):
         await self.delete_playlist_by_name(ctx, *pl_name)
 
         
+    @commands.command(name="reload")
+    async def reload(self, ctx):
+        await self.reload_bot(ctx)
