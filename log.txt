@@ -135,3 +135,6 @@
 {'time': '22/05/2022 14:04:35', 'author': 'Giulio Andreotti', 'message': '!pause'}
 {'time': '22/05/2022 14:07:02', 'author': 'Giulio Andreotti', 'message': '!p masters of nurimberg wagner'}
 {'time': '22/05/2022 14:07:12', 'author': 'Giulio Andreotti', 'message': '!np'}
+{'time': '22/05/2022 18:18:46', 'author': 'Giulio Andreotti', 'message': '!p vespri solenni del confessore mozart'}
+{'time': '22/05/2022 18:18:52', 'author': 'Giulio Andreotti', 'message': '!np'}
+{'time': '22/05/2022 18:37:08', 'author': 'Giulio Andreotti', 'message': '!np'}
