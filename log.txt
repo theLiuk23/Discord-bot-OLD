@@ -138,3 +138,12 @@
 {'time': '22/05/2022 18:18:46', 'author': 'Giulio Andreotti', 'message': '!p vespri solenni del confessore mozart'}
 {'time': '22/05/2022 18:18:52', 'author': 'Giulio Andreotti', 'message': '!np'}
 {'time': '22/05/2022 18:37:08', 'author': 'Giulio Andreotti', 'message': '!np'}
+{'time': '19/06/2022 16:53:52', 'author': 'Giulio Andreotti', 'message': '!p hey'}
+{'time': '19/06/2022 16:54:01', 'author': 'Giulio Andreotti', 'message': '!p hey'}
+{'time': '19/06/2022 16:54:03', 'author': 'Giulio Andreotti', 'message': '!p bonwes'}
+{'time': '19/06/2022 16:54:08', 'author': 'Giulio Andreotti', 'message': '!p bones'}
+{'time': '19/06/2022 16:54:23', 'author': 'Giulio Andreotti', 'message': '!next'}
+{'time': '19/06/2022 16:54:27', 'author': 'Giulio Andreotti', 'message': '!p bones'}
+{'time': '19/06/2022 16:54:38', 'author': 'Giulio Andreotti', 'message': '!stop'}
+{'time': '19/06/2022 16:54:40', 'author': 'Giulio Andreotti', 'message': '!p bones'}
+{'time': '19/06/2022 16:54:47', 'author': 'Giulio Andreotti', 'message': '!stop'}

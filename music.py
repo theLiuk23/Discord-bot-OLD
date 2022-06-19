@@ -10,7 +10,6 @@ If you have any question, write me at ldvcoding@gmail.com
 '''
 
 
-import re
 from urllib.error import HTTPError
 from discord.ext import commands
 from discord.ext import tasks
@@ -384,8 +383,10 @@ class MusicCog(commands.Cog):
         '''
         now = datetime.datetime.now().strftime("%d/%m/%Y %H:%M:%S")
         await self.load_volume()
-        self.check_members.start() # checks if bot is alone on voice channel 
-        self.check_is_playing.start() # checks if bot is not playing anything for 5 minutes
+        if not self.check_members.is_running():
+            self.check_members.start() # checks if bot is alone on voice channel 
+        if not self.check_is_playing.is_running():
+            self.check_is_playing.start() # checks if bot is not playing anything for 5 minutes
         print(f"{now} - BOT IS FINALLY ONLINE!")
 
 
